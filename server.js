@@ -6,27 +6,26 @@ var app = express();
 var PORT = process.env.PORT || 3000;
 
 var todoModel = {
-	id:{
-		type:'number',
-		searchType:'exact'
+	id: {
+		type: 'number',
+		searchType: 'exact'
 	},
-	complete:{
-		type:'boolean',
-		searchType:'exact'
+	complete: {
+		type: 'boolean',
+		searchType: 'exact'
 	},
 	description: {
-		type:'string',
-		searchType:'includes'
+		type: 'string',
+		searchType: 'includes'
 	},
 }
 
 var todos = [{
-	id:1,
+	id: 1,
 	complete: false,
 	description: 'item 1'
-},
-{
-	id:2,
+}, {
+	id: 2,
 	complete: true,
 	description: 'item 2',
 }];
@@ -35,10 +34,10 @@ var todoNextId = 3;
 
 var validKeys = ['description', 'complete', 'id'];
 
-coerceToModelType = function (obj) {
+coerceToModelType = function(obj) {
 	var keys = _.keys(obj);
 
-	for (i=0,l=keys.length;i<l;i++){
+	for (i = 0, l = keys.length; i < l; i++) {
 
 		var key = keys[i]
 
@@ -62,7 +61,7 @@ coerceToModelType = function (obj) {
 app.use(bodyParser.json());
 
 //root
-app.get('/', (req,res) => {
+app.get('/', (req, res) => {
 	res.send('Todo Api Root');
 });
 
@@ -70,35 +69,23 @@ app.get('/', (req,res) => {
 app.get('/todos', (req, res) => {
 	if (req.query) {
 		var query = _.pick(req.query, validKeys); // trim any query params not in the accepted params list
-		query = coerceToModelType(query);         // coerce each query value to the type of it's param in the todoModel object
-		selectedTodos = todos;					  // set selectedTodos to todos so we don't modify the actual todos object accidentally
-		// selectedTodos = _.where(todos,query);
+		query = coerceToModelType(query); // coerce each query value to the type of it's param in the todoModel object
+		selectedTodos = todos; // set selectedTodos to todos so we don't modify the actual todos object accidentally
 
-		//query is object of query keys and values
-		//queryKeys is array of each param in query
+		var queryKeys = _.keys(query); //create array of all the params in the query string
 
-		var queryKeys = _.keys(query);
-
-		for (i=0,l=queryKeys.length;i<l;i++) {
-
-			// if (todoModel[queryKeys[i]].searchType === 'exact') {
-			// 	selectedTodos = _.where(selectedTodos,);
-			// } else if (model demands includes) {
-			// 	selectedTodos = _.filter(selectedTodos, (todo) => {
-			// 		return
-			// 	});
-			// }
+		for (i = 0, l = queryKeys.length; i < l; i++) { // for each param in query
 
 			var queryKey = queryKeys[i] //current query key
 			var queryItem = query[queryKey] //current query "item"
 			var todoModelProperty = todoModel[queryKey] // todoModel property matching this query
 
-			selectedTodos = _.filter(selectedTodos, (todo) => {
-				if (todoModel[queryKey].searchType === 'exact') {
-					return queryItem === todo[queryKey];
-				} else if (todoModel[queryKey].searchType === 'includes') {
-					return todo[queryKey].toLowerCase().indexOf(queryItem.toLowerCase()) > -1
-				} else {
+			selectedTodos = _.filter(selectedTodos, (todo) => { //filter the selectedTodos based off the criteria from the current query param
+				if (todoModel[queryKey].searchType === 'exact') { //if exact match
+					return queryItem === todo[queryKey]; // then check if each todo (currently selected param) matches the current param's search exactly
+				} else if (todoModel[queryKey].searchType === 'includes') { // if an 'includes' search
+					return todo[queryKey].toLowerCase().indexOf(queryItem.toLowerCase()) > -1  // then check if each todo (currently selected param) exists anywhere in the current query param
+				} else { //otherwise, there's something wrong with the todoModel, and we should return everything
 					return true;
 				}
 			});
@@ -109,9 +96,11 @@ app.get('/todos', (req, res) => {
 });
 
 //get a specific todo
-app.get('/todos/:id', (req,res) => {
-	var todoId = parseInt(req.params.id,10),
-		todo = _.findWhere(todos,{id: todoId});
+app.get('/todos/:id', (req, res) => {
+	var todoId = parseInt(req.params.id, 10),
+		todo = _.findWhere(todos, {
+			id: todoId
+		});
 
 	if (todo) {
 		res.json(todo);
@@ -121,7 +110,7 @@ app.get('/todos/:id', (req,res) => {
 });
 
 //post a todo
-app.post('/todos',(req, res) => {
+app.post('/todos', (req, res) => {
 	var body = _.pick(req.body, validKeys);
 
 	if (!_.isBoolean(body.complete) || !_.isString(body.description) || body.description.trim().length === 0) {
@@ -138,22 +127,28 @@ app.post('/todos',(req, res) => {
 });
 
 //delete a todo
-app.delete('/todos/:id', (req,res) => {
-	var todoId = parseInt(req.params.id,10),
-		todo = _.findWhere(todos,{id:todoId});
+app.delete('/todos/:id', (req, res) => {
+	var todoId = parseInt(req.params.id, 10),
+		todo = _.findWhere(todos, {
+			id: todoId
+		});
 
 	if (!todo) {
-		return res.status(404).json({"error":"no todo found with id: " + todoId});
+		return res.status(404).json({
+			"error": "no todo found with id: " + todoId
+		});
 	}
 
-	todos = _.without(todos,todo);
+	todos = _.without(todos, todo);
 	res.json(todo);
 })
 
 //edit a todo
-app.put('/todos/:id',(req,res) => {
-	var todoId = parseInt(req.params.id,10),
-		todo = _.findWhere(todos,{id: todoId});
+app.put('/todos/:id', (req, res) => {
+	var todoId = parseInt(req.params.id, 10),
+		todo = _.findWhere(todos, {
+			id: todoId
+		});
 
 	if (!todo) {
 		return res.status(404).send();
