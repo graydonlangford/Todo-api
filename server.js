@@ -6,58 +6,58 @@ var db = require('./db.js');
 var app = express();
 var PORT = process.env.PORT || 3000;
 
-var todoModel = {
-  id: {
-    type: 'number',
-    searchType: 'exact'
-  },
-  complete: {
-    type: 'boolean',
-    searchType: 'exact'
-  },
-  description: {
-    type: 'string',
-    searchType: 'includes'
-  },
-}
+// var todoModel = {
+//   id: {
+//     type: 'number',
+//     searchType: 'exact'
+//   },
+//   complete: {
+//     type: 'boolean',
+//     searchType: 'exact'
+//   },
+//   description: {
+//     type: 'string',
+//     searchType: 'includes'
+//   },
+// }
 
-var todos = [{
-  id: 1,
-  complete: false,
-  description: 'item 1'
-}, {
-  id: 2,
-  complete: true,
-  description: 'item 2',
-}];
+// var todos = [{
+//   id: 1,
+//   complete: false,
+//   description: 'item 1'
+// }, {
+//   id: 2,
+//   complete: true,
+//   description: 'item 2',
+// }];
 
-var todoNextId = 3;
+// var todoNextId = 3;
 
 var validKeys = ['description', 'complete', 'id'];
 
-coerceToModelType = function(obj) {
-  var keys = _.keys(obj);
+// coerceToModelType = function(obj) {
+//   var keys = _.keys(obj);
 
-  for (i = 0, l = keys.length; i < l; i++) {
+//   for (i = 0, l = keys.length; i < l; i++) {
 
-    var key = keys[i]
+//     var key = keys[i]
 
-    if (todoModel[key].type === 'boolean') {
-      if (obj[key].toLowerCase().trim() === 'true') {
-        obj[key] = true;
-      } else if (obj[key].toLowerCase().trim() === 'false') {
-        obj[key] = false;
-      }
-    } else if (todoModel[key].type === 'number') {
-      if (!isNaN(parseInt(obj[key]))) {
-        obj[key] = parseInt(obj[key]);
-      }
-    } else if (todoModel[key].type === 'string') {
-      obj[key].toString();
-    }
-  }
-  return obj;
-}
+//     if (todoModel[key].type === 'boolean') {
+//       if (obj[key].toLowerCase().trim() === 'true') {
+//         obj[key] = true;
+//       } else if (obj[key].toLowerCase().trim() === 'false') {
+//         obj[key] = false;
+//       }
+//     } else if (todoModel[key].type === 'number') {
+//       if (!isNaN(parseInt(obj[key]))) {
+//         obj[key] = parseInt(obj[key]);
+//       }
+//     } else if (todoModel[key].type === 'string') {
+//       obj[key].toString();
+//     }
+//   }
+//   return obj;
+// }
 
 app.use(bodyParser.json());
 
@@ -68,32 +68,54 @@ app.get('/', (req, res) => {
 
 //get all todos
 app.get('/todos', (req, res) => {
-  if (req.query) {
-    var query = _.pick(req.query, validKeys); // trim any query params not in the accepted params list
-    query = coerceToModelType(query); // coerce each query value to the type of it's param in the todoModel object
-    selectedTodos = todos; // set selectedTodos to todos so we don't modify the actual todos object accidentally
 
-    var queryKeys = _.keys(query); //create array of all the params in the query string
+  var query = req.query
+  var where = {}
 
-    for (i = 0, l = queryKeys.length; i < l; i++) { // for each param in query
+  if (query.hasOwnProperty('complete') && query.complete === 'true') {
+    where.complete = true
+  } else if (query.hasOwnProperty('complete') && query.complete === 'false') {
+    where.complete = false
+  }
 
-      var queryKey = queryKeys[i] //current query key
-      var queryItem = query[queryKey] //current query "item"
-      var todoModelProperty = todoModel[queryKey] // todoModel property matching this query
-
-      selectedTodos = _.filter(selectedTodos, (todo) => { //filter the selectedTodos based off the criteria from the current query param
-        if (todoModel[queryKey].searchType === 'exact') { //if exact match
-          return queryItem === todo[queryKey]; // then check if each todo (currently selected param) matches the current param's search exactly
-        } else if (todoModel[queryKey].searchType === 'includes') { // if an 'includes' search
-          return todo[queryKey].toLowerCase().indexOf(queryItem.toLowerCase()) > -1  // then check if each todo (currently selected param) exists anywhere in the current query param
-        } else { //otherwise, there's something wrong with the todoModel, and we should return everything
-          return true;
-        }
-      });
+  if (query.hasOwnProperty('q') && query.q.length > 0) {
+    where.description = {
+      $like: '%' + query.q + '%'
     }
   }
 
-  res.json(selectedTodos);
+  db.todo.findAll({where: where}).then(function (todos) {
+    res.json(todos)
+  }, function (err) {
+    res.status(500).send()
+  })
+
+  // if (req.query) {
+  //   var query = _.pick(req.query, validKeys); // trim any query params not in the accepted params list
+  //   query = coerceToModelType(query); // coerce each query value to the type of it's param in the todoModel object
+  //   selectedTodos = todos; // set selectedTodos to todos so we don't modify the actual todos object accidentally
+
+  //   var queryKeys = _.keys(query); //create array of all the params in the query string
+
+  //   for (i = 0, l = queryKeys.length; i < l; i++) { // for each param in query
+
+  //     var queryKey = queryKeys[i] //current query key
+  //     var queryItem = query[queryKey] //current query "item"
+  //     var todoModelProperty = todoModel[queryKey] // todoModel property matching this query
+
+  //     selectedTodos = _.filter(selectedTodos, (todo) => { //filter the selectedTodos based off the criteria from the current query param
+  //       if (todoModel[queryKey].searchType === 'exact') { //if exact match
+  //         return queryItem === todo[queryKey]; // then check if each todo (currently selected param) matches the current param's search exactly
+  //       } else if (todoModel[queryKey].searchType === 'includes') { // if an 'includes' search
+  //         return todo[queryKey].toLowerCase().indexOf(queryItem.toLowerCase()) > -1  // then check if each todo (currently selected param) exists anywhere in the current query param
+  //       } else { //otherwise, there's something wrong with the todoModel, and we should return everything
+  //         return true;
+  //       }
+  //     });
+  //   }
+  // }
+
+  // res.json(selectedTodos);
 });
 
 // GET todos/:id
