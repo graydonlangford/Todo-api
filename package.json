@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,5 +15,8 @@
     "sequelize": "^3.5.1",
     "sqlite3": "^3.1.4",
     "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^1.10.0"
   }
 }
