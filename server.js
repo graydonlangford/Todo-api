@@ -43,7 +43,7 @@ app.get('/todos', middleware.requireAuthentication, function (req, res) {
     }
   }
 
-  db.todo.findAll({where: where}).then( function (todos) {
+  db.todo.findAll({where: where}).then(function (todos) {
     res.json(todos)
   }, function (err) {
     res.status(500).send()
@@ -61,7 +61,7 @@ app.get('/todos/:id', middleware.requireAuthentication, function (req, res) {
       userId: req.user.get('id'),
       id: todoId
     }
-  }).then( function (todo) {
+  }).then(function (todo) {
     if (!!todo) {
       res.json(todo.toJSON())
     } else {
@@ -78,7 +78,7 @@ app.get('/todos/:id', middleware.requireAuthentication, function (req, res) {
 app.post('/todos', middleware.requireAuthentication, function (req, res) {
   var body = _.pick(req.body, validKeys.todo)
 
-  db.todo.create(body).then( function (todo) {
+  db.todo.create(body).then(function (todo) {
     req.user.addTodo(todo).then(function () {
       return todo.reload()
     }).then(function (todo) {
@@ -100,7 +100,7 @@ app.delete('/todos/:id', middleware.requireAuthentication, function (req, res) {
       userId: req.user.get('id'),
       id: todoId
     }
-  }).then( function (todo) {
+  }).then(function (todo) {
     todo.destroy().then(
       function (todo) {
         res.json(todo)
@@ -137,7 +137,7 @@ app.put('/todos/:id', middleware.requireAuthentication, function (req, res) {
       userId: req.user.get('id'),
       id: todoId
     }
-  }).then( function (todo) {
+  }).then(function (todo) {
     if (todo) {
       todo.update(attributes).then(function (todo) {
         res.json(todo.toJSON())
@@ -157,7 +157,7 @@ app.put('/todos/:id', middleware.requireAuthentication, function (req, res) {
 app.post('/users', function (req, res) {
   var body = _.pick(req.body, validKeys.user)
 
-  db.user.create(body).then( function (user) {
+  db.user.create(body).then(function (user) {
     res.json(user.toPublicJSON())
   }, function (err) {
     res.status(400).json(err)
@@ -167,19 +167,32 @@ app.post('/users', function (req, res) {
 // POST /users/login - login as a user - login - login user
 app.post('/users/login', function (req, res) {
   var body = _.pick(req.body, validKeys.user)
+  var userInstance
 
-  db.user.authenticate(body).then( function (user) {
+  db.user.authenticate(body).then(function (user) {
     var token = user.generateToken('authentication')
-    if (token) {
-      res.header('Auth', token).json(user.toPublicJSON())
-    } else {
-      res.status(401).send()
-    }
+    userInstance = user
 
-  }, function (err) {
+    return db.token.create({
+      token: token
+    })
+
+  }).then(function (tokenInstance) {
+    res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON)
+  }).catch(function (err) {
+    console.log(err)
     res.status(401).send()
   })
 
+})
+
+// DELETE /users/login - log out a user
+app.delete('/users/login', middleware.requireAuthentication, function (req, res) {
+  req.token.destroy().then(function () {
+    res.status(204).send()
+  }).catch(function() {
+    res.status(500).send()
+  })
 })
 
 // start sequelize and listen on port
