@@ -135,7 +135,7 @@ app.post('/users', function (req, res) {
   var body = _.pick(req.body, validKeys.user)
 
   db.user.create(body).then( function (user) {
-    res.json(user.toJSON())
+    res.json(user.toPublicJSON())
   }, function (err) {
     res.status(400).json(err)
   })
